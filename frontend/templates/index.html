@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retail Transaction Analytics</title><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6fb;color:#172033}
+header{background:#152747;color:white;padding:26px 5%;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header p{margin:7px 0 0;color:#c7d4e8}main{max-width:1150px;margin:28px auto;padding:0 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}.card{background:white;border-radius:14px;padding:22px;box-shadow:0 5px 18px #1c31500d}
+.label{color:#68758b;font-size:14px}.value{font-size:30px;font-weight:700;margin-top:12px}.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:18px}
+h2{font-size:18px;margin-top:0}.status{font-size:13px;padding:7px 11px;border-radius:20px;background:#d8f7e8;color:#176b47}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #edf0f5;font-size:14px}footer{text-align:center;color:#68758b;padding:24px;font-size:13px}
+</style></head><body>
+<header><div><h1>Retail Transaction Analytics</h1><p>Sales performance and market-basket insights</p></div><span class="status" id="status">Connecting…</span></header>
+<main><section class="grid">
+<div class="card"><div class="label">Total Revenue</div><div class="value" id="revenue">—</div></div>
+<div class="card"><div class="label">Orders</div><div class="value" id="orders">—</div></div>
+<div class="card"><div class="label">Customers</div><div class="value" id="customers">—</div></div>
+<div class="card"><div class="label">Units Sold</div><div class="value" id="units">—</div></div>
+</section><section class="charts">
+<div class="card"><h2>Daily Revenue</h2><canvas id="salesChart"></canvas></div>
+<div class="card"><h2>Top Products</h2><table><thead><tr><th>Product</th><th>Units</th><th>Revenue</th></tr></thead><tbody id="products"></tbody></table></div>
+<div class="card"><h2>Frequently Bought Together</h2><table><thead><tr><th>Item A</th><th>Item B</th><th>Confidence</th></tr></thead><tbody id="baskets"></tbody></table></div>
+</section></main><footer>Demo dataset for CI/CD validation · Served by Docker Compose</footer>
+<script>
+async function loadDashboard(){try{
+const [m,s,p,b]=await Promise.all(['/api/metrics','/api/sales','/api/products','/api/basket'].map(u=>fetch(u).then(r=>{if(!r.ok)throw Error(u);return r.json()})));
+document.getElementById('revenue').textContent=new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(m.revenue);
+document.getElementById('orders').textContent=m.orders.toLocaleString();document.getElementById('customers').textContent=m.customers.toLocaleString();document.getElementById('units').textContent=m.units.toLocaleString();
+document.getElementById('status').textContent='Analytics API connected';
+document.getElementById('products').innerHTML=p.map(x=>`<tr><td>${x.name}</td><td>${x.units}</td><td>₹${x.revenue.toLocaleString('en-IN')}</td></tr>`).join('');
+document.getElementById('baskets').innerHTML=b.map(x=>`<tr><td>${x.item_a}</td><td>${x.item_b}</td><td>${Math.round(x.confidence*100)}%</td></tr>`).join('');
+new Chart(document.getElementById('salesChart'),{type:'line',data:{labels:s.map(x=>x.date),datasets:[{label:'Revenue (₹)',data:s.map(x=>x.revenue),borderWidth:3,tension:.25}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+}catch(e){document.getElementById('status').textContent='Backend unavailable';document.getElementById('status').style.background='#ffe2e2';document.getElementById('status').style.color='#8b2020';}}
+loadDashboard();
+</script></body></html>
