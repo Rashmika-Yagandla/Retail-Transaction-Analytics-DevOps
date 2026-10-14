@@ -1,26 +1,61 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: retail-analytics-backend
     restart: unless-stopped
-    expose: ["5000"]
+    ports:
+      - "5000:5000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')"]
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=3)"
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
+      start_period: 20s
+
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: retail-analytics-frontend
     restart: unless-stopped
     environment:
-      BACKEND_URL: http://backend:5000
-    ports: ["3000:3000"]
+      BACKEND_URL: "http://backend:5000"
+    ports:
+      - "3000:3000"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health')"]
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health', timeout=3)"
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
+      start_period: 20s
+      
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: retail-analytics-jenkins
+    user: "0:0"
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  uploads:
+  jenkins_home:  
