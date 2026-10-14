@@ -25,9 +25,19 @@ pipeline {
         }
         stage('Build Docker images') { steps { sh 'docker compose build' } }
         stage('Deploy') {
-            when { branch 'main' }
-            steps { sh 'docker compose up -d --remove-orphans' }
-        }
+    when {
+        branch 'main'
+    }
+    steps {
+        sh '''
+            set -eu
+            docker --version
+            docker compose version
+            docker compose -p retail-analytics up -d --build
+            docker compose -p retail-analytics ps
+        '''
+    }
+}
         stage('Smoke tests') {
             when { branch 'main' }
             steps {
